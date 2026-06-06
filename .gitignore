@@ -1,6 +1,5 @@
-# Nunca subir credenciais para o GitHub!
-# Antes de commitar, verifique que o token em js/config.js
-# está como 'SEU_TOKEN_AQUI'
+# Credenciais — nunca subir para o GitHub!
+js/config.js
 
 # Sistema operacional
 .DS_Store
