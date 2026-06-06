@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ONG Vida Plena — Teresina, PI</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ── TOAST ──────────────────────────────────────── -->
+<div class="toast" id="toast"></div>
+
+<!-- ── MODAL ADMIN ────────────────────────────────── -->
+<div class="modal-overlay" id="modal-admin">
+  <div class="modal">
+    <h2>🔐 Acesso Admin</h2>
+    <p>Digite a senha para acessar o painel administrativo</p>
+    <input type="password" id="admin-senha" placeholder="Senha"
+      onkeydown="if(event.key==='Enter') Auth.tentarLogin()">
+    <button class="modal-btn" onclick="Auth.tentarLogin()">Entrar</button>
+    <div class="modal-err" id="modal-err">Senha incorreta. Tente novamente.</div>
+    <button onclick="Auth.fecharModal()"
+      style="margin-top:12px;background:none;border:none;color:#888;font-size:13px;cursor:pointer">
+      Cancelar
+    </button>
+  </div>
+</div>
+
+<!-- ── BARRA ADMIN ─────────────────────────────────── -->
+<div class="admin-bar" id="admin-bar">
+  <span>⚙️ Modo Admin ativo — ONG Vida Plena</span>
+  <button class="admin-logout" onclick="Auth.logout()">Sair do admin</button>
+</div>
+
+<!-- ── NAV ────────────────────────────────────────── -->
+<nav class="nav">
+  <div class="nav-brand">❤️ ONG Vida Plena <span>Teresina, PI</span></div>
+  <div class="nav-links">
+    <button class="nav-link active"   onclick="Nav.ir('eventos',this)">Eventos</button>
+    <button class="nav-link"          onclick="Nav.ir('formulario',this)">Inscrever-se</button>
+    <button class="nav-link"          onclick="Nav.ir('dashboard',this)">Dashboard</button>
+    <!-- Visíveis só para admin -->
+    <button class="nav-link" id="nav-beneficiarios" style="display:none" onclick="Nav.ir('beneficiarios',this)">Beneficiários</button>
+    <button class="nav-link" id="nav-inscricoes"    style="display:none" onclick="Nav.ir('inscricoes',this)">Inscrições</button>
+    <button class="nav-admin" id="nav-admin-ev"     style="display:none" onclick="Nav.ir('admin-eventos',this)">📅 Eventos</button>
+    <!-- Botão de login admin -->
+    <button class="nav-admin" onclick="Auth.abrirModal()">⚙️ Admin</button>
+  </div>
+</nav>
+
+<!-- ── HERO ────────────────────────────────────────── -->
+<div class="hero">
+  <div class="hero-loc">📍 Teresina, Piauí — Grande Teresina</div>
+  <h1>Transformando vidas em Teresina</h1>
+  <p>Inclusão digital, capacitação profissional e campanhas de saúde para comunidades da periferia de Teresina há mais de 10 anos.</p>
+  <button class="hero-btn" onclick="Nav.ir('formulario')">Inscreva-se agora</button>
+  <div class="stats">
+    <div><div class="stat-num" id="s-ev">—</div><div class="stat-lbl">Eventos ativos</div></div>
+    <div><div class="stat-num" id="s-be">—</div><div class="stat-lbl">Beneficiários</div></div>
+    <div><div class="stat-num" id="s-in">—</div><div class="stat-lbl">Inscrições</div></div>
+    <div><div class="stat-num" id="s-vg">—</div><div class="stat-lbl">Vagas totais</div></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     PÁGINA — EVENTOS
+     ═══════════════════════════════════════════════════ -->
+<div id="page-eventos" class="page active">
+  <div class="wrap"><div class="sec">
+    <div class="sec-hdr">
+      <div>
+        <div class="sec-title">Próximos eventos</div>
+        <div class="sec-sub">Clique em "Inscrever-se" para participar</div>
+      </div>
+    </div>
+    <div id="ev-grid" class="grid">
+      <div class="ld"><span class="spin"></span>Carregando eventos...</div>
+    </div>
+  </div></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     PÁGINA — INSCRIÇÃO (com busca por CPF)
+     ═══════════════════════════════════════════════════ -->
+<div id="page-formulario" class="page">
+  <div class="wrap"><div class="sec">
+
+    <!-- Step 1: CPF -->
+    <div class="cpf-step" id="step-cpf">
+      <div class="cpf-step-title">Nova inscrição</div>
+      <div class="cpf-step-sub">Digite seu CPF para verificarmos seu cadastro</div>
+      <div class="cpf-row">
+        <input class="cpf-input" type="text" id="f-cpf"
+          placeholder="000.000.000-00" maxlength="14"
+          oninput="Inscricao.onCPFInput(this)"
+          onkeydown="if(event.key==='Enter') Inscricao.buscar()">
+        <button class="btn-cpf" onclick="Inscricao.buscar()">Buscar</button>
+      </div>
+      <div id="cpf-feedback" style="margin-top:10px;font-size:13px;color:#888"></div>
+    </div>
+
+    <!-- Step 2: Dados + Eventos -->
+    <div class="cpf-step" id="step-dados" style="display:none;margin-top:16px">
+
+      <!-- Beneficiário encontrado -->
+      <div id="dados-encontrados" style="display:none">
+        <div class="dados-benef">
+          <div class="dados-benef-title">✅ Cadastro encontrado</div>
+          <div class="dados-benef-grid">
+            <div class="dados-benef-item"><span>Nome</span><strong id="vw-nome">—</strong></div>
+            <div class="dados-benef-item"><span>Idade</span><strong id="vw-idade">—</strong></div>
+            <div class="dados-benef-item"><span>E-mail</span><strong id="vw-email">—</strong></div>
+            <div class="dados-benef-item"><span>Telefone</span><strong id="vw-tel">—</strong></div>
+            <div class="dados-benef-item"><span>Zona</span><strong id="vw-zona">—</strong></div>
+            <div class="dados-benef-item"><span>Bairro</span><strong id="vw-bairro">—</strong></div>
+          </div>
+        </div>
+        <span class="novo-benef-toggle" onclick="Inscricao.mostrarNovo()">
+          Não é você? Cadastrar novo beneficiário
+        </span>
+      </div>
+
+      <!-- Novo beneficiário -->
+      <div id="dados-novo" style="display:none">
+        <div class="cpf-step-sub" style="margin-bottom:14px">
+          CPF não encontrado. Preencha seus dados para se cadastrar:
+        </div>
+        <div class="fgrid">
+          <div class="fgrp"><label>Nome completo *</label><input type="text" id="fn" placeholder="Seu nome completo"></div>
+          <div class="fgrp"><label>Idade *</label><input type="number" id="fi" placeholder="Sua idade" min="1" max="120"></div>
+          <div class="fgrp"><label>E-mail *</label><input type="email" id="fe" placeholder="seu@email.com"></div>
+          <div class="fgrp"><label>Telefone</label><input type="tel" id="ft" placeholder="(86) 99999-9999"></div>
+          <div class="fgrp"><label>Zona *</label><select id="fr"></select></div>
+          <div class="fgrp"><label>Bairro</label><select id="fb"></select></div>
+          <div class="fgrp full"><label>Observações</label>
+            <input type="text" id="fo" placeholder="Necessidade especial ou informação adicional">
+          </div>
+        </div>
+      </div>
+
+      <!-- Lista de eventos disponíveis -->
+      <div style="margin-bottom:12px">
+        <div style="font-size:14px;font-weight:700;margin-bottom:4px">Selecione o(s) evento(s)</div>
+        <div style="font-size:12px;color:#888;margin-bottom:12px">
+          Eventos já inscritos não podem ser selecionados novamente
+        </div>
+        <div id="ev-list-inscricao" class="ev-list">
+          <div class="ld"><span class="spin"></span>Carregando eventos...</div>
+        </div>
+      </div>
+
+      <button class="bsub" id="bsub" onclick="Inscricao.enviar()">Confirmar inscrição</button>
+      <div class="al al-ok" id="al-ok">
+        ✅ <div><strong>Inscrição enviada!</strong><br>Verifique seu e-mail — você receberá um link para confirmar ou cancelar sua participação.</div>
+      </div>
+      <div class="al al-err" id="al-err">❌ <span id="al-err-msg">Erro ao enviar.</span></div>
+    </div>
+
+  </div></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     PÁGINA — BENEFICIÁRIOS (admin)
+     ═══════════════════════════════════════════════════ -->
+<div id="page-beneficiarios" class="page">
+  <div class="wrap"><div class="sec">
+    <div class="sec-hdr">
+      <div>
+        <div class="sec-title">Beneficiários cadastrados</div>
+        <div class="sec-sub">🔒 Área restrita — somente administradores</div>
+      </div>
+      <span class="badge bg" id="b-total"></span>
+    </div>
+    <div class="search-bar">
+      <input type="text" id="b-search" placeholder="🔍 Buscar por nome, bairro ou e-mail..." oninput="Beneficiarios.filtrar()">
+      <select id="b-regiao" onchange="Beneficiarios.filtrar()">
+        <option value="">Todas as zonas</option>
+        <option>Zona Norte</option><option>Zona Sul</option>
+        <option>Zona Leste</option><option>Zona Sudeste</option><option>Centro</option>
+      </select>
+    </div>
+    <div id="b-list" class="blist">
+      <div class="ld"><span class="spin"></span>Carregando...</div>
+    </div>
+  </div></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     PÁGINA — INSCRIÇÕES (admin)
+     ═══════════════════════════════════════════════════ -->
+<div id="page-inscricoes" class="page">
+  <div class="wrap"><div class="sec">
+    <div class="sec-hdr">
+      <div>
+        <div class="sec-title">Gestão de inscrições</div>
+        <div class="sec-sub" id="insc-sub">🔒 Área restrita — somente administradores</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <span class="badge bb" id="i-total"></span>
+        <button class="btn-csv" onclick="Inscricoes.exportarCSV()">⬇️ Exportar CSV</button>
+      </div>
+    </div>
+    <div class="search-bar">
+      <input type="text" id="i-search" placeholder="🔍 Buscar por nome ou ID..." oninput="Inscricoes.filtrar()">
+      <select id="i-filtro-status" onchange="Inscricoes.filtrar()">
+        <option value="">Todos os status</option>
+        <option>Confirmada</option><option>Pendente</option><option>Cancelada</option>
+      </select>
+      <select id="i-filtro-evento" onchange="Inscricoes.filtrar()">
+        <option value="">Todos os eventos</option>
+      </select>
+    </div>
+    <div class="twrap">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th><th>Beneficiário</th><th>Evento</th>
+            <th>Data</th><th>Status</th><th>Presença</th>
+            <th id="col-acoes" style="display:none">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="i-body">
+          <tr><td colspan="7" class="ld"><span class="spin"></span>Carregando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     PÁGINA — DASHBOARD
+     ═══════════════════════════════════════════════════ -->
+<div id="page-dashboard" class="page">
+  <div class="wrap"><div class="sec">
+    <div class="sec-hdr">
+      <div>
+        <div class="sec-title">Dashboard</div>
+        <div class="sec-sub">ONG Vida Plena · Teresina, PI · Dados em tempo real</div>
+      </div>
+    </div>
+    <div class="dgrid">
+      <div class="met"><div class="met-lbl">Inscrições</div><div class="met-val" id="d-in">—</div><div class="met-sub">total</div></div>
+      <div class="met"><div class="met-lbl">Confirmadas</div><div class="met-val" id="d-co">—</div><div class="met-sub" id="d-co-p">—</div></div>
+      <div class="met"><div class="met-lbl">Pendentes</div><div class="met-val" id="d-pe">—</div><div class="met-sub warn" id="d-pe-p">—</div></div>
+      <div class="met"><div class="met-lbl">Presentes</div><div class="met-val" id="d-pr">—</div><div class="met-sub" id="d-pr-p">—</div></div>
+      <div class="met"><div class="met-lbl">Ausentes</div><div class="met-val" id="d-au">—</div><div class="met-sub warn" id="d-au-p">—</div></div>
+      <div class="met"><div class="met-lbl">Beneficiários</div><div class="met-val" id="d-be">—</div><div class="met-sub">cadastrados</div></div>
+      <div class="met"><div class="met-lbl">Eventos</div><div class="met-val" id="d-ev">—</div><div class="met-sub">planejados</div></div>
+      <div class="met"><div class="met-lbl">Vagas totais</div><div class="met-val" id="d-vg">—</div><div class="met-sub">disponíveis</div></div>
+    </div>
+    <div class="ccard"><div class="ctitle">Taxa de presença por evento</div><div id="ch-presenca"><div class="ld"><span class="spin"></span></div></div></div>
+    <div class="ccard"><div class="ctitle">Inscrições por evento</div><div id="ch-ev"><div class="ld"><span class="spin"></span></div></div></div>
+    <div class="ccard"><div class="ctitle">Beneficiários por zona</div><div id="ch-re"><div class="ld"><span class="spin"></span></div></div></div>
+  </div></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     PÁGINA — GERENCIAR EVENTOS (admin)
+     ═══════════════════════════════════════════════════ -->
+<div id="page-admin-eventos" class="page">
+  <div class="wrap"><div class="sec">
+    <div class="sec-hdr">
+      <div>
+        <div class="sec-title">Gerenciar Eventos</div>
+        <div class="sec-sub">Cadastre, edite e gerencie os eventos da ONG</div>
+      </div>
+      <button class="btn-ev-save" onclick="AdminEventos.novoEvento()">+ Novo Evento</button>
+    </div>
+
+    <!-- Formulário de criação/edição -->
+    <div id="ev-form-wrap" style="display:none">
+      <div class="ev-form">
+        <div class="ev-form-title" id="ev-form-title">Novo Evento</div>
+        <input type="hidden" id="ev-id">
+        <div class="ev-grid">
+          <div class="ev-grp full">
+            <span class="ev-label">Nome do Evento *</span>
+            <input class="ev-input" type="text" id="ev-nome" placeholder="Ex: Oficina de Informática">
+          </div>
+          <div class="ev-grp">
+            <span class="ev-label">Data *</span>
+            <input class="ev-input" type="date" id="ev-data">
+          </div>
+          <div class="ev-grp">
+            <span class="ev-label">Vagas *</span>
+            <input class="ev-input" type="number" id="ev-vagas" placeholder="Ex: 30" min="1">
+          </div>
+          <div class="ev-grp">
+            <span class="ev-label">Local *</span>
+            <input class="ev-input" type="text" id="ev-local" placeholder="Ex: Centro Comunitário Dirceu">
+          </div>
+          <div class="ev-grp">
+            <span class="ev-label">Tipo *</span>
+            <select class="ev-input" id="ev-tipo">
+              <option value="">Selecione...</option>
+              <option>Inclusão Digital</option>
+              <option>Capacitação Profissional</option>
+              <option>Campanha de Saúde</option>
+              <option>Outro</option>
+            </select>
+          </div>
+          <div class="ev-grp">
+            <span class="ev-label">Status</span>
+            <select class="ev-input" id="ev-status">
+              <option>Planejado</option>
+              <option>Em andamento</option>
+              <option>Concluído</option>
+              <option>Cancelado</option>
+            </select>
+          </div>
+          <div class="ev-grp full">
+            <span class="ev-label">Descrição</span>
+            <input class="ev-input" type="text" id="ev-desc" placeholder="Breve descrição do evento">
+          </div>
+        </div>
+        <div>
+          <button class="btn-ev-save" onclick="AdminEventos.salvar()">💾 Salvar</button>
+          <button class="btn-ev-cancel" onclick="AdminEventos.cancelar()">Cancelar</button>
+        </div>
+        <div id="ev-al-ok"  style="display:none;margin-top:10px;background:#E1F5EE;color:#085041;border:1px solid #9FE1CB;border-radius:8px;padding:10px 14px;font-size:13px">✅ Evento salvo com sucesso!</div>
+        <div id="ev-al-err" style="display:none;margin-top:10px;background:#FCEBEB;color:#791F1F;border:1px solid #F7C1C1;border-radius:8px;padding:10px 14px;font-size:13px">❌ <span id="ev-err-msg">Erro ao salvar.</span></div>
+      </div>
+    </div>
+
+    <div id="aev-list" class="aev-grid">
+      <div class="ld"><span class="spin"></span>Carregando eventos...</div>
+    </div>
+  </div></div>
+</div>
+
+<!-- ── SCRIPTS (ordem importa) ─────────────────────── -->
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/nav.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/eventos.js"></script>
+<script src="js/inscricao.js"></script>
+<script src="js/modulos.js"></script>
+
+<script>
+  // ── Registrar carregadores de página ──────────────
+  Nav.registrar('dashboard',      () => Dashboard.carregar());
+  Nav.registrar('beneficiarios',  () => Beneficiarios.carregar());
+  Nav.registrar('inscricoes',     () => Inscricoes.carregar());
+  Nav.registrar('admin-eventos',  () => AdminEventos.carregar());
+  Nav.registrar('formulario',     () => Inscricao.init());
+
+  // ── Inicializar ao carregar ────────────────────────
+  document.addEventListener('DOMContentLoaded', () => {
+    Eventos.carregar();
+    Inscricoes.carregar();   // para estatísticas do hero
+    Beneficiarios.carregar(); // para estatísticas do hero
+  });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,16 @@
+# Nunca subir credenciais para o GitHub!
+# Antes de commitar, verifique que o token em js/config.js
+# está como 'SEU_TOKEN_AQUI'
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+
+# Editores
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
