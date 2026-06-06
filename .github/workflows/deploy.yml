@@ -1,0 +1,61 @@
+name: Deploy GitHub Pages
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Gerar js/config.js a partir dos Secrets
+        run: |
+          cat > js/config.js << 'ENDOFFILE'
+          const CONFIG = {
+            AIRTABLE_TOKEN: '${{ secrets.AIRTABLE_TOKEN }}',
+            AIRTABLE_BASE:  '${{ secrets.AIRTABLE_BASE }}',
+            WEBHOOK_URL:    '${{ secrets.WEBHOOK_URL }}',
+            ADMIN_SENHA:    '${{ secrets.ADMIN_SENHA }}',
+            TIPO_CORES: {
+              'Inclusão Digital':        '#1D9E75',
+              'Capacitação Profissional': '#534AB7',
+              'Campanha de Saúde':       '#993C1D',
+              'Outro':                   '#5F5E5A',
+            },
+            TIPO_ICONS: {
+              'Inclusão Digital':        '💻',
+              'Capacitação Profissional': '✂️',
+              'Campanha de Saúde':       '🏥',
+              'Outro':                   '📋',
+            },
+            ZONAS: ['Zona Norte', 'Zona Sul', 'Zona Leste', 'Zona Sudeste', 'Centro'],
+            BAIRROS: [
+              'Dirceu Arcoverde', 'Itararé', 'Mocambinho', 'Mafrense',
+              'Fátima', 'Noivos', 'São Joaquim', 'Primavera',
+              'Santa Maria da Codipi', 'Buenos Aires', 'Poti Velho', 'Centro', 'Outro'
+            ],
+          };
+          ENDOFFILE
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+
+      - uses: actions/deploy-pages@v4
+        id: deployment
