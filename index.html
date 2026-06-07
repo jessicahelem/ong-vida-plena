@@ -27,6 +27,16 @@
   </div>
 </div>
 
+<!-- ── MODAL EVENTOS DO BENEFICIÁRIO ──────────────── -->
+<div class="modal-overlay" id="modal-eventos" onclick="if(event.target===this)Beneficiarios.fecharEventos()">
+  <div class="modal" style="max-width:460px;text-align:left">
+    <h2 id="modal-ev-titulo" style="font-size:16px;margin-bottom:2px"></h2>
+    <p>Histórico de inscrições</p>
+    <div id="modal-ev-lista" style="margin:16px 0;max-height:380px;overflow-y:auto"></div>
+    <button class="modal-btn" onclick="Beneficiarios.fecharEventos()">Fechar</button>
+  </div>
+</div>
+
 <!-- ── BARRA ADMIN ─────────────────────────────────── -->
 <div class="admin-bar" id="admin-bar">
   <span>⚙️ Modo Admin ativo — ONG Vida Plena</span>
@@ -51,15 +61,14 @@
 
 <!-- ── HERO ────────────────────────────────────────── -->
 <div class="hero">
-  <div class="hero-loc">📍 Teresina, Piauí — Grande Teresina</div>
   <h1>Transformando vidas em Teresina</h1>
   <p>Inclusão digital, capacitação profissional e campanhas de saúde para comunidades da periferia de Teresina há mais de 10 anos.</p>
   <button class="hero-btn" onclick="Nav.ir('formulario')">Inscreva-se agora</button>
   <div class="stats">
     <div><div class="stat-num" id="s-ev">—</div><div class="stat-lbl">Eventos ativos</div></div>
     <div><div class="stat-num" id="s-be">—</div><div class="stat-lbl">Beneficiários</div></div>
-    <div><div class="stat-num" id="s-in">—</div><div class="stat-lbl">Inscrições</div></div>
-    <div><div class="stat-num" id="s-vg">—</div><div class="stat-lbl">Vagas totais</div></div>
+    <div><div class="stat-num" id="s-in">—</div><div class="stat-lbl">Confirmadas</div></div>
+    <div><div class="stat-num" id="s-vg">—</div><div class="stat-lbl">Vagas disponíveis</div></div>
   </div>
 </div>
 
@@ -247,7 +256,7 @@
       <div class="met"><div class="met-lbl">Ausentes</div><div class="met-val" id="d-au">—</div><div class="met-sub warn" id="d-au-p">—</div></div>
       <div class="met"><div class="met-lbl">Beneficiários</div><div class="met-val" id="d-be">—</div><div class="met-sub">cadastrados</div></div>
       <div class="met"><div class="met-lbl">Eventos</div><div class="met-val" id="d-ev">—</div><div class="met-sub">planejados</div></div>
-      <div class="met"><div class="met-lbl">Vagas totais</div><div class="met-val" id="d-vg">—</div><div class="met-sub">disponíveis</div></div>
+      <div class="met"><div class="met-lbl">Vagas disponíveis</div><div class="met-val" id="d-vg">—</div><div class="met-sub">não ocupadas</div></div>
     </div>
     <div class="ccard"><div class="ctitle">Taxa de presença por evento</div><div id="ch-presenca"><div class="ld"><span class="spin"></span></div></div></div>
     <div class="ccard"><div class="ctitle">Inscrições por evento</div><div id="ch-ev"><div class="ld"><span class="spin"></span></div></div></div>

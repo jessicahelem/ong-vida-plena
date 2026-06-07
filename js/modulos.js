@@ -12,32 +12,45 @@ const Beneficiarios = (() => {
     list.innerHTML = '<div class="ld"><span class="spin"></span>Carregando...</div>';
 
     try {
-      const [bes, ins] = await Promise.all([
+      const [bes, ins, evs] = await Promise.all([
         API.listar('Beneficiários', forcar),
         API.listar('Inscrições', forcar),
+        API.listar('Eventos', forcar),
       ]);
 
       const sbe = document.getElementById('s-be');
       if (sbe) sbe.textContent = bes.length;
       if (total) total.textContent = bes.length + ' pessoas';
 
+      const evMap = Object.fromEntries(evs.map(r => [r.id, r.fields['Nome do Evento'] || '—']));
+
       const cnt = {};
-      ins.forEach(r => (r.fields['Beneficiários'] || []).forEach(id => {
-        cnt[id] = (cnt[id] || 0) + 1;
-      }));
+      const insMap = {};
+      ins.forEach(r => {
+        const status   = r.fields['Status da Inscrição'] || 'Pendente';
+        const presenca = r.fields['Presença'] || 'Aguardando';
+        (r.fields['Beneficiários'] || []).forEach(bid => {
+          if (status === 'Confirmada') cnt[bid] = (cnt[bid] || 0) + 1;
+          if (!insMap[bid]) insMap[bid] = [];
+          (r.fields['Eventos'] || []).forEach(eid => {
+            insMap[bid].push({ nomeEvento: evMap[eid] || '—', status, presenca });
+          });
+        });
+      });
 
       _todos = bes.map(r => {
         const f = r.fields;
         return {
-          id:     r.id,
-          nome:   f['Nome Completo'] || '—',
-          idade:  f['Idade'] || '—',
-          tel:    f['Telefone'] || '—',
-          email:  f['Email'] || '—',
-          regiao: f['Região'] || '—',
-          bairro: f['Bairro'] || '',
-          cpf:    f['CPF'] || '',
-          qtd:    cnt[r.id] || 0,
+          id:      r.id,
+          nome:    f['Nome Completo'] || '—',
+          idade:   f['Idade'] || '—',
+          tel:     f['Telefone'] || '—',
+          email:   f['Email'] || '—',
+          regiao:  f['Região'] || '—',
+          bairro:  f['Bairro'] || '',
+          cpf:     f['CPF'] || '',
+          qtd:     cnt[r.id] || 0,
+          eventos: insMap[r.id] || [],
         };
       });
 
@@ -57,7 +70,10 @@ const Beneficiarios = (() => {
           <div class="bmeta">${b.idade} anos · ${b.regiao}${b.bairro ? ' · ' + b.bairro : ''}</div>
           <div class="bmeta" style="color:#888">${b.tel} · ${b.email}</div>
           <div class="bmeta" style="color:#aaa;font-size:11px">CPF: ${b.cpf || '—'}</div>
-          <div class="bevts">✓ ${b.qtd} evento${b.qtd !== 1 ? 's' : ''} inscrito${b.qtd !== 1 ? 's' : ''}</div>
+          <div class="bevts">✓ ${b.qtd} evento${b.qtd !== 1 ? 's' : ''} confirmado${b.qtd !== 1 ? 's' : ''}</div>
+          ${b.eventos.length > 0
+            ? `<button class="btn-ev-edit" style="margin-top:6px" onclick="Beneficiarios.verEventos('${b.id}')">📋 Ver eventos</button>`
+            : ''}
         </div>
         <span class="badge bg">${b.regiao}</span>
       </div>`).join('') || '<div class="ebox">Nenhum beneficiário encontrado.</div>';
@@ -72,7 +88,34 @@ const Beneficiarios = (() => {
     ));
   }
 
-  return { carregar, filtrar };
+  function verEventos(benefId) {
+    const b = _todos.find(x => x.id === benefId);
+    if (!b) return;
+    document.getElementById('modal-ev-titulo').textContent = b.nome;
+    document.getElementById('modal-ev-lista').innerHTML = b.eventos.length === 0
+      ? '<p style="color:#888;font-size:13px">Nenhum evento encontrado.</p>'
+      : b.eventos.map(e => {
+          let cls = 'ba', icone = '⏳';
+          if (e.presenca === 'Presente')      { cls = 'bg'; icone = '✅'; }
+          else if (e.status === 'Confirmada') { cls = 'bg'; icone = '✓'; }
+          else if (e.status === 'Cancelada')  { cls = 'br'; icone = '✗'; }
+          return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f0f4f8">
+            <span style="font-size:15px;width:22px;text-align:center">${icone}</span>
+            <div style="flex:1">
+              <div style="font-size:13px;font-weight:600;color:#1a1a1a">${e.nomeEvento}</div>
+              ${e.presenca !== 'Aguardando' ? `<div style="font-size:11px;color:#888">${e.presenca}</div>` : ''}
+            </div>
+            <span class="badge ${cls}" style="font-size:11px">${e.status}</span>
+          </div>`;
+        }).join('');
+    document.getElementById('modal-eventos').classList.add('open');
+  }
+
+  function fecharEventos() {
+    document.getElementById('modal-eventos').classList.remove('open');
+  }
+
+  return { carregar, filtrar, verEventos, fecharEventos };
 })();
 
 
@@ -96,8 +139,9 @@ const Inscricoes = (() => {
         API.listar('Beneficiários', forcar),
       ]);
 
+      const conf = ins.filter(r => r.fields['Status da Inscrição'] === 'Confirmada').length;
       const si = document.getElementById('s-in');
-      if (si) si.textContent = ins.length;
+      if (si) si.textContent = conf;
       if (total) total.textContent = ins.length + ' registros';
 
       const eMap = Object.fromEntries(evs.map(r => [r.id, r.fields['Nome do Evento']]));
@@ -203,7 +247,9 @@ const Dashboard = (() => {
       const pend  = ins.filter(r => r.fields['Status da Inscrição'] === 'Pendente').length;
       const pres  = ins.filter(r => r.fields['Presença'] === 'Presente').length;
       const ause  = ins.filter(r => r.fields['Presença'] === 'Ausente').length;
-      const vagas = evs.reduce((s, r) => s + (r.fields['Vagas'] || 0), 0);
+      const vagas       = evs.reduce((s, r) => s + (r.fields['Vagas'] || 0), 0);
+      const ocupadas    = ins.filter(r => r.fields['Status da Inscrição'] !== 'Cancelada').length;
+      const vagasDisp   = Math.max(0, vagas - ocupadas);
 
       _set('d-in', total);
       _set('d-co', conf,  'd-co-p', total ? `${Math.round(conf/total*100)}% do total` : '—');
@@ -212,7 +258,7 @@ const Dashboard = (() => {
       _set('d-au', ause,  'd-au-p', conf  ? `${Math.round(ause/conf*100)}% dos confirmados` : '—');
       _set('d-be', bes.length);
       _set('d-ev', evs.length);
-      _set('d-vg', vagas);
+      _set('d-vg', vagasDisp);
 
       _renderGraficos(ins, evs, bes);
     } catch (e) {

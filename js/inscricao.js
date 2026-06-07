@@ -121,7 +121,7 @@ const Inscricao = (() => {
       const vagas    = f['Vagas'] || 0;
       const cor      = TCOR[tipo] || '#5F5E5A';
       const inscrito = inscritosMap[r.id];
-      const disabled = !!inscrito;
+      const disabled = !!inscrito && inscrito.status !== 'Cancelada';
 
       let badge = '', badgeCls = '';
       if (inscrito) {

@@ -10,8 +10,11 @@ const Eventos = (() => {
     grid.innerHTML = '<div class="ld"><span class="spin"></span>Carregando eventos...</div>';
 
     try {
-      const evs = await API.listar('Eventos');
-      _atualizarEstatisticas(evs);
+      const [evs, ins] = await Promise.all([
+        API.listar('Eventos'),
+        API.listar('Inscrições'),
+      ]);
+      _atualizarEstatisticas(evs, ins);
       _popularSelectFormulario(evs);
       _popularFiltroInscricoes(evs);
       grid.innerHTML = evs.map(_renderCard).join('') ||
@@ -21,13 +24,14 @@ const Eventos = (() => {
     }
   }
 
-  function _atualizarEstatisticas(evs) {
-    const total = evs.length;
-    const vagas = evs.reduce((s, r) => s + (r.fields['Vagas'] || 0), 0);
-    const el = document.getElementById('s-ev');
-    if (el) el.textContent = total;
-    const elV = document.getElementById('s-vg');
-    if (elV) elV.textContent = vagas;
+  function _atualizarEstatisticas(evs, ins) {
+    const vagasTotal = evs.reduce((s, r) => s + (r.fields['Vagas'] || 0), 0);
+    const ocupadas   = ins.filter(r => r.fields['Status da Inscrição'] !== 'Cancelada').length;
+    const vagasDisp  = Math.max(0, vagasTotal - ocupadas);
+    const elEv = document.getElementById('s-ev');
+    if (elEv) elEv.textContent = evs.length;
+    const elVg = document.getElementById('s-vg');
+    if (elVg) elVg.textContent = vagasDisp;
   }
 
   function _popularSelectFormulario(evs) {
