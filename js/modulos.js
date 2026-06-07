@@ -275,49 +275,83 @@ const Dashboard = (() => {
     }
   }
 
-  function _renderGraficos(ins, evs, bes) {
-    const eMap = Object.fromEntries(evs.map(r => [r.id, r.fields['Nome do Evento']]));
+  function _barra(label, sublabel, valor, max, cls) {
+    const pct = max ? Math.round((valor / max) * 100) : 0;
+    return `<div class="brow">
+      <div class="blbl"><span>${label}</span><span>${sublabel}</span></div>
+      <div class="btrack"><div class="bfill ${cls}" style="width:${pct}%"></div></div>
+    </div>`;
+  }
 
-    // Taxa de presença por evento
-    const ePres = {}, eConf = {};
+  function _renderGraficos(ins, evs, bes) {
+    const eMap = Object.fromEntries(evs.map(r => [r.id, r.fields['Nome do Evento'] || r.id]));
+    const bTotal = bes.length || 1;
+
+    // Contadores por evento
+    const ePres = {}, eConf = {}, eCnt = {};
     ins.forEach(r => {
       const f = r.fields;
       (f['Eventos'] || []).forEach(id => {
+        eCnt[id] = (eCnt[id] || 0) + 1;
         if (f['Status da Inscrição'] === 'Confirmada') eConf[id] = (eConf[id] || 0) + 1;
         if (f['Presença'] === 'Presente')              ePres[id] = (ePres[id] || 0) + 1;
       });
     });
-    const chPres = document.getElementById('ch-presenca');
-    if (chPres) {
-      chPres.innerHTML = Object.entries(eConf).map(([id, c]) => {
-        const p = ePres[id] || 0;
-        const pct = c ? Math.round(p / c * 100) : 0;
-        return Utils.barraProgresso(`${eMap[id] || id} (${p}/${c})`, pct, 100, 'blue');
-      }).join('') || '<p style="color:#888;font-size:13px">Aguardando confirmações</p>';
-    }
 
-    // Inscrições por evento
-    const eCnt = {};
-    ins.forEach(r => (r.fields['Eventos'] || []).forEach(id => { eCnt[id] = (eCnt[id] || 0) + 1; }));
-    const maxE = Math.max(...Object.values(eCnt), 1);
+    // Gráfico 1 — Inscrições por evento (todos os eventos)
+    const maxE = Math.max(...evs.map(r => eCnt[r.id] || 0), 1);
     const chEv = document.getElementById('ch-ev');
     if (chEv) {
-      chEv.innerHTML = Object.entries(eCnt).sort((a, b) => b[1] - a[1])
-        .map(([id, n]) => Utils.barraProgresso(eMap[id] || id, n, maxE)).join('') ||
-        '<p style="color:#888;font-size:13px">Sem dados</p>';
+      chEv.innerHTML = evs.map(r => {
+        const n     = eCnt[r.id] || 0;
+        const vagas = r.fields['Vagas'] || 0;
+        return _barra(eMap[r.id], `${n} inscrição${n !== 1 ? 'ões' : ''} / ${vagas} vagas`, n, maxE, 'purple');
+      }).join('');
     }
 
-    // Beneficiários por zona
+    // Gráfico 2 — Taxa de presença por evento (todos os eventos)
+    const chPres = document.getElementById('ch-presenca');
+    if (chPres) {
+      chPres.innerHTML = evs.map(r => {
+        const conf = eConf[r.id] || 0;
+        const pres = ePres[r.id] || 0;
+        const pct  = conf ? Math.round(pres / conf * 100) : 0;
+        const sub  = conf
+          ? `${pres} presente${pres !== 1 ? 's' : ''} de ${conf} confirmado${conf !== 1 ? 's' : ''} (${pct}%)`
+          : 'Sem confirmados ainda';
+        return _barra(eMap[r.id], sub, pct, 100, '');
+      }).join('');
+    }
+
+    // Gráfico 3 — Beneficiários por zona
     const rCnt = {};
-    bes.forEach(r => {
-      const reg = r.fields['Região'] || 'Sem zona';
-      rCnt[reg] = (rCnt[reg] || 0) + 1;
-    });
+    bes.forEach(r => { const z = r.fields['Região'] || 'Sem zona'; rCnt[z] = (rCnt[z] || 0) + 1; });
     const maxR = Math.max(...Object.values(rCnt), 1);
     const chRe = document.getElementById('ch-re');
     if (chRe) {
       chRe.innerHTML = Object.entries(rCnt).sort((a, b) => b[1] - a[1])
-        .map(([reg, n]) => Utils.barraProgresso(reg, n, maxR, 'amber')).join('');
+        .map(([z, n]) => _barra(z, `${n} pessoa${n !== 1 ? 's' : ''} · ${Math.round(n / bTotal * 100)}%`, n, maxR, 'amber')).join('');
+    }
+
+    // Gráfico 4 — Faixa etária
+    const faixas = [
+      { label: 'Até 17 anos',  min: 0,  max: 17,  n: 0 },
+      { label: '18 a 25 anos', min: 18, max: 25,  n: 0 },
+      { label: '26 a 35 anos', min: 26, max: 35,  n: 0 },
+      { label: '36 a 50 anos', min: 36, max: 50,  n: 0 },
+      { label: 'Acima de 50',  min: 51, max: 999, n: 0 },
+    ];
+    bes.forEach(r => {
+      const idade = r.fields['Idade'];
+      if (!idade) return;
+      const fx = faixas.find(f => idade >= f.min && idade <= f.max);
+      if (fx) fx.n++;
+    });
+    const maxF = Math.max(...faixas.map(f => f.n), 1);
+    const chId = document.getElementById('ch-idade');
+    if (chId) {
+      chId.innerHTML = faixas
+        .map(f => _barra(f.label, `${f.n} pessoa${f.n !== 1 ? 's' : ''} · ${Math.round(f.n / bTotal * 100)}%`, f.n, maxF, 'red')).join('');
     }
   }
 
